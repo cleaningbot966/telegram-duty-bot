@@ -267,7 +267,7 @@ async def duty(message: types.Message):
         next_index = (current_index + 1) % len(users_list)
         next_user_id = users_list[next_index]
         next_name = users_db[next_user_id]["name"]
-        
+
         days_left = 3 - (day % 3)
 
         if days_left == 1:
@@ -277,19 +277,17 @@ async def duty(message: types.Message):
 
         text = "🧹 Дежурства\n\n"
         text += f"🟢 Сейчас: {users_db[current_user_id]['name']} ({days_text})\n"
-        text = "🧹 Дежурства\n\n"
-        text += f"🟢 Сейчас: {users_db[current_user_id]['name']}\n"
         text += f"🔜 Следующий: {next_name}\n\n"
         text += "📊 Очередь:\n"
 
-        for i, user_id in enumerate(users_list):
-            name = users_db[user_id]["name"]
-            if user_id == current_user_id:
-                text += f"{i+1}. {name} 👈\n"
-            else:
-                text += f"{i+1}. {name}\n"
+    for i, user_id in enumerate(users_list):
+        name = users_db[user_id]["name"]
+        if user_id == current_user_id:
+            text += f"{i+1}. {name} 👈\n"
+        else:
+            text += f"{i+1}. {name}\n"
 
-        await message.answer(text)
+    await message.answer(text)
 
     # 🔜 Следующий
     elif message.text == "🔜 Следующий":
