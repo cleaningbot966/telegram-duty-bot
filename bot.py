@@ -267,7 +267,16 @@ async def duty(message: types.Message):
         next_index = (current_index + 1) % len(users_list)
         next_user_id = users_list[next_index]
         next_name = users_db[next_user_id]["name"]
+        
+        days_left = 3 - (day % 3)
 
+        if days_left == 1:
+            days_text = "остался 1 день"
+        else:
+            days_text = f"осталось {days_left} дня"
+
+        text = "🧹 Дежурства\n\n"
+        text += f"🟢 Сейчас: {users_db[current_user_id]['name']} ({days_text})\n"
         text = "🧹 Дежурства\n\n"
         text += f"🟢 Сейчас: {users_db[current_user_id]['name']}\n"
         text += f"🔜 Следующий: {next_name}\n\n"
