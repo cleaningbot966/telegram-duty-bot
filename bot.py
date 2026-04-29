@@ -289,17 +289,20 @@ async def duty(message: types.Message):
 
     await message.answer(text)
 
-    # 🔜 Следующий
-    elif message.text == "🔜 Следующий":
+
+    if message.text == "🔜 Следующий":
         next_index = (current_index + 1) % len(users_list)
         next_user_id = users_list[next_index]
         name = users_db[next_user_id]["name"]
 
-        await message.answer(f"🔜 Следующий дежурный: {name}")
+        days_left = 3 - (day % 3)
 
-    else:
-        await message.answer("Выбери кнопку 👇")
+        if days_left == 1:
+            days_text = "завтра"
+        else:
+            days_text = f"через {days_left} дня"
 
+    await message.answer(f"🔜 Следующий: {name} ({days_text})")
 
 
 # 🔔 УВЕДОМЛЕНИЯ
