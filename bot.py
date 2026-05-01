@@ -11,6 +11,7 @@ TOKEN = "7658695918:AAFd7MKHYqLwMQiPDOVH0GhJFwtwOEc4rP0"
 # 📁 файл с пользователями
 FILE_NAME = "users.json"
 
+ADMIN_ID = "651360759"
 # загрузка пользователей
 def load_users():
     if os.path.exists(FILE_NAME):
@@ -61,21 +62,22 @@ async def start(message: types.Message):
 
     save_users(users_db)
 
-    # 👇 ВСЁ должно быть с одинаковыми отступами (4 пробела)
-    keyboard = ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="📅 Дежурство")],
-            [KeyboardButton(text="📊 Очередь"), KeyboardButton(text="🔜 Следующий")]
-        ],
-        resize_keyboard=True
-    )
+    # 👤 обычная клавиатура
+    keyboard = [
+        [KeyboardButton(text="📅 Дежурство")],
+        [KeyboardButton(text="📊 Очередь"), KeyboardButton(text="🔜 Следующий")]
+    ]
+
+    # 👑 если админ — добавляем кнопку
+    if user_id == ADMIN_ID:
+        keyboard.append([KeyboardButton(text="👑 Админ панель")])
+
+    markup = ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
 
     await message.answer(
-    f"👋 Привет, {name}!\n\n"
-    "Этот бот помогает следить за дежурствами 🧹\n\n"
-    "👇 Используй кнопки ниже",
-    reply_markup=keyboard
-)
+        f"👋 Привет, {name}!\n\nИспользуй кнопки ниже 👇",
+        reply_markup=markup
+    )
 
 @dp.message(Command("today"))
 async def today(message: types.Message):
@@ -100,6 +102,7 @@ async def next_duty(message: types.Message):
         return
 
     day = date.today().toordinal()
+    days_left = 3 - (day % 3)
 
     current_index = (day // 3) % len(users_list)
     next_index = (current_index + 1) % len(users_list)
@@ -122,6 +125,11 @@ async def queue(message: types.Message):
 
     # текущий день
     day = date.today().toordinal()
+    days_left = 3 - (day % 3)
+    if days_left == 1:
+        days_text = "остался 1 день"
+    else:
+        days_text = f"осталось {days_left} дня"
 
     # текущий дежурный
     current_index = (day // 3) % len(users_list)
@@ -135,7 +143,8 @@ async def queue(message: types.Message):
 
     # собираем текст
     text = "🧹 Дежурства\n\n"
-    text += f"🟢 Сейчас: {current_name}\n"
+    days_left = 3 - (day % 3)
+    text += f"🟢 Сейчас: {current_name} ({days_text})\n"
     text += f"🔜 Следующий: {next_name}\n\n"
     text += "📊 Очередь:\n"
 
@@ -150,6 +159,25 @@ async def queue(message: types.Message):
             text += f"{i+1}. {name}\n"
 
     await message.answer(text)
+
+@dp.message(Command("remove"))
+async def remove_user(message: types.Message):
+    if str(message.from_user.id) != ADMIN_ID:
+        await message.answer("❌ Нет доступа")
+        return
+
+    try:
+        user_id = message.text.split()[1]
+
+        if user_id in users_db:
+            del users_db[user_id]
+            save_users(users_db)
+            await message.answer("✅ Пользователь удалён")
+        else:
+            await message.answer("❌ Не найден")
+
+    except:
+        await message.answer("⚠ Используй: /remove ID")
 @dp.message()
 async def duty(message: types.Message):
 
@@ -166,15 +194,72 @@ async def duty(message: types.Message):
         return
 
     day = date.today().toordinal()
+    days_left = 3 - (day % 3)
     current_index = (day // 3) % len(users_list)
     current_user_id = users_list[current_index]
 
+    # 👑 Админ панель
+    if message.text == "👑 Админ панель":
+        if str(message.from_user.id) != ADMIN_ID:
+            await message.answer("❌ У тебя нет доступа")
+            return
+
+        keyboard = ReplyKeyboardMarkup(
+            keyboard=[
+                [KeyboardButton(text="📋 Список пользователей")],
+                [KeyboardButton(text="❌ Удалить пользователя")],
+                [KeyboardButton(text="⬅️ Назад")]
+            ],
+            resize_keyboard=True
+        )
+
+        await message.answer("👑 Админ панель", reply_markup=keyboard)
+
+    # 📋 Список пользователей
+    elif message.text == "📋 Список пользователей":
+        if str(message.from_user.id) != ADMIN_ID:
+            return
+
+        text = "👥 Пользователи:\n\n"
+
+        for user_id, data in users_db.items():
+            text += f"{data['name']} | ID: {user_id}\n"
+
+        await message.answer(text)
+
+    # ❌ Удаление
+    elif message.text.startswith("❌"):
+        if str(message.from_user.id) != ADMIN_ID:
+            return
+
+        await message.answer("Введи ID пользователя:\n/remove ID")
+
+    # ⬅️ Назад
+    elif message.text == "⬅️ Назад":
+
+        user_id = str(message.from_user.id)
+
+        keyboard = [
+            [KeyboardButton(text="📅 Дежурство")],
+            [KeyboardButton(text="📊 Очередь"), KeyboardButton(text="🔜 Следующий")]
+        ]
+
+        # 👑 если админ — добавляем кнопку обратно
+        if user_id == ADMIN_ID:
+            keyboard.append([KeyboardButton(text="👑 Админ панель")])
+
+        markup = ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
+
+        await message.answer("Главное меню 👇", reply_markup=markup)
+
     # 📅 Дежурство
-    if message.text == "📅 Дежурство":
+    elif message.text == "📅 Дежурство":
         if str(message.from_user.id) == current_user_id:
+            days_left = 3 - (day % 3)
             await message.answer("🧹 Сегодня дежуришь ТЫ 😎")
         else:
             name = users_db[current_user_id]["name"]
+            days_left = 3 - (day % 3)
             await message.answer(f"🧹 Сегодня дежурит: {name}")
 
     # 📊 Очередь
@@ -209,6 +294,7 @@ async def duty(message: types.Message):
         await message.answer("Выбери кнопку 👇")
 
 
+
 # 🔔 УВЕДОМЛЕНИЯ
 async def send_daily_notifications():
     from datetime import date
@@ -219,12 +305,23 @@ async def send_daily_notifications():
         return
 
     day = date.today().toordinal()
-    index = (day // 3) % len(users_list)
 
+    index = (day // 3) % len(users_list)
     current_user_id = users_list[index]
 
     try:
-        await bot.send_message(current_user_id, "🧹 Сегодня ты дежурный!")
+        days_left = 3 - (day % 3)
+
+        if days_left == 1:
+            days_text = "остался 1 день"
+        else:
+            days_text = f"осталось {days_left} дня"
+
+        await bot.send_message(
+            current_user_id,
+            f"🧹 Сегодня ты дежурный!\n⏳ {days_text}"
+        )
+
     except:
         print("Не удалось отправить сообщение (пользователь не запустил бота)")
 
