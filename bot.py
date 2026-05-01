@@ -12,6 +12,16 @@ TOKEN = "7658695918:AAFd7MKHYqLwMQiPDOVH0GhJFwtwOEc4rP0"
 FILE_NAME = "users.json"
 
 ADMIN_ID = "651360759"
+
+ # пользевати
+ALLOWED_USERS = [
+    "651360759",   # Женя
+    "5930028202",  # Серёжа
+    "973686093",   # Аристарх
+    "1349941724",  # Юлик
+    "1088291620",  # Ростик
+    "1835127811"   # Саша
+]
 # загрузка пользователей
 def load_users():
     if os.path.exists(FILE_NAME):
@@ -180,6 +190,11 @@ async def remove_user(message: types.Message):
         await message.answer("⚠ Используй: /remove ID")
 @dp.message()
 async def duty(message: types.Message):
+
+    # 🔒 доступ нового польщывателя 
+    if str(message.from_user.id) not in ALLOWED_USERS:
+        await message.answer("🚫 Нет доступа")
+        return
 
     # пропускаем команды
     if message.text.startswith("/"):
