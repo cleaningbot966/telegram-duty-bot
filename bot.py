@@ -67,7 +67,16 @@ async def start(message: types.Message):
 
     # 🔒 ПРОВЕРКА ДОБАВЛЕНА
     if user_id not in ALLOWED_USERS:
-        await message.answer("🚫 У тебя нет доступа")
+        await message.answer(
+        f"🚫 Нет доступа\n\nТвой ID: {user_id}"
+        )
+
+        # 👑 админу сообщение
+        await bot.send_message(
+            ADMIN_ID,
+            f"🚨 Новый пользователь хочет доступ:\n\nID: {user_id}\nUsername: @{username}"
+         )
+
         return
 
     # ✅ добавляем ТОЛЬКО разрешённых
