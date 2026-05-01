@@ -65,10 +65,17 @@ async def start(message: types.Message):
     username = message.from_user.username
     name = message.from_user.first_name
 
-    users_db[user_id] = {
-        "name": name,
-        "username": username
-    }
+    # 🔒 ПРОВЕРКА ДОБАВЛЕНА
+    if user_id not in ALLOWED_USERS:
+        await message.answer("🚫 У тебя нет доступа")
+        return
+
+    # ✅ добавляем ТОЛЬКО разрешённых
+    if user_id not in users_db:
+        users_db[user_id] = {
+            "name": name,
+            "username": username
+        }
 
     save_users(users_db)
 
